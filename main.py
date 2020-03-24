@@ -156,86 +156,62 @@ def tintImage(directory, tint_color):
 # font enum stores an index into this array
 fontList = ["Poppins-Regular.ttf", "Poppins-Italic.ttf", "Poppins-SemiBold.ttf", "Poppins-Bold.ttf", "Poppins-Light.ttf", "Poppins-Medium.ttf", "Poppins-Thin.ttf", "Poppins-SemiBoldItalic.ttf", "Poppins-BoldItalic.ttf", "Poppins-LightItalic.ttf", "Poppins-MediumItalic.ttf", "Poppins-ThinItalic.ttf"]
 
-# TODO: implement title positioning
-# TODO: implement word wrapping
-def addTitle(path, targetPath, text, style=Font.REGULAR, color=Color.BLACK, position=Position.CENTER, size=120):
+yOffset = 0
+
+targetX = 0
+targetY = 0
+
+# this text refers to an instance of the Text class
+def __write__(img, text, position):
+	"""
+	This is an internal function.
+	Its parameters are the same as addText
+	"""
+
 	global fontList
+	global yOffset
+	global targetX
+	global targetY
 
-	"""
-	param: path
-	type: String
-	desc: path to the image
-
-	param: text
-	type: String
-	desc: title text
-
-	param: style
-	type: Font
-	desc: specifies the font style. refer to Font class
-
-	param: color
-	type: Color or tuple
-	desc: color to use for the title
-
-	param: position
-	type: Position
-	desc: The position of the title on the image
-
-	param: size
-	type: int
-	desc: text size for the title
-
-	Adds a title with the given text to the specified images
-	"""
-
-	# create a new image object with the given path
-	img = Image.open(path).convert('RGBA')
 	draw = ImageDraw.Draw(img)
 
-	# create a new ImageFont type and load the specified ttf font
-	targetFont = ImageFont.truetype("Fonts/" + fontList[style.value], size)
+	targetFont = ImageFont.truetype("Fonts/" + fontList[text.style.value], text.size)
 
 	colorTuple = ()
 
-	if type(color) == tuple:
-		colorTuple = color
+	if type(text.color) == tuple:
+		colorTuple = text.color
 	else:
-		colorTuple = hexToRGB(str(hex(color.value))) # FIX THIS
-
-	# create an rgb tuple out of the derived hex value from the color
-	#colorTuple = hexToRGB(str(hex(color.value)))
-
-	# for now, we draw the title on the center of the image
-	# until positioning is implemented
+		# create an rgb tuple out of the derived hex value from the color
+		colorTuple = hexToRGB(str(hex(text.color.value)))
 	
-	# grab the dimensions of the image and the title
+	# grab the dimensions of the image and the content
 	imageWidth, imageHeight = img.size # size is an attribute, not a method for some reason. this lib is pretty inconsistent
-	titleWidth, titleHeight = targetFont.getsize(text)
+	contentWidth, contentHeight = targetFont.getsize(text.content)
 
 	if position == Position.TOP_LEFT:
 		targetX = 30
-		targetY = 30
+		targetY = 30 + yOffset
 
-		draw.text((targetX, targetY), text, colorTuple, font=targetFont)
+		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
 	elif position == Position.TOP_RIGHT:
-		targetX = imageWidth - (titleWidth + 30)
-		targetY = 30
+		targetX = imageWidth - (contentWidth + 30)
+		targetY = 30 + yOffset
 
-		draw.text((targetX, targetY), text, colorTuple, font=targetFont)
+		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
 	elif position == Position.BOTTOM_LEFT:
 		targetX = 30
-		targetY = imageHeight - (titleHeight + 30)
+		targetY = imageHeight - contentHeight - 30 - yOffset
 
-		draw.text((targetX, targetY), text, colorTuple, font=targetFont)
+		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
 	elif position == Position.BOTTOM_RIGHT:
-		targetX = imageWidth - (titleWidth + 30)
-		targetY = imageHeight - (titleHeight + 30)
+		targetX = imageWidth - (contentWidth + 30)
+		targetY = imageHeight - contentHeight - 30 - yOffset
 
-		draw.text((targetX, targetY), text, colorTuple, font=targetFont)
+		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
 	elif position == Position.CENTER:
 		# calculate the center coordinates of the image
@@ -243,13 +219,84 @@ def addTitle(path, targetPath, text, style=Font.REGULAR, color=Color.BLACK, posi
 		centerY = imageHeight / 2
 
 		# we place the text at centerX - (titleWidth / 2) and centerY - (titleHeight / 2)
-		targetX = centerX - (titleWidth / 2)
-		targetY = centerY - (titleHeight / 2)
+		targetX = centerX - (contentWidth / 2)
+		targetY = centerY - (contentHeight / 2) + yOffset
 
-		draw.text((targetX, targetY), text, colorTuple, font=targetFont)
+		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+	elif position == Position.TOP_CENTER:
+		centerX = imageWidth / 2
+
+		targetX = centerX - (contentWidth / 2)
+		targetY = 30 + yOffset
+
+		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+	elif position == Position.BOTTOM_CENTER:
+		centerX = imageWidth / 2
+		
+		targetX = centerX - (contentWidth / 2)
+		targetY = imageHeight - contentHeight - 30 - yOffset
+
+		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+
+	return img
+
+# TODO: implement word wrapping
+# this text refers to an instance of the Text class
+def addText(path, targetPath, text, position=Position.CENTER):
+	"""
+	param: path
+	type: String
+	desc: path to the image
+
+	param: targetPath
+	type: String
+	desc: path to output image
+
+	param: text
+	type: Text or list
+	desc: a Text object or list of Text objects
+
+	param: position
+	type: Position
+	desc: The position of the title on the image
+
+	Adds a title with the given text to the specified images
+	"""
+
+	global fontList
+	global yOffset
+	global targetX
+	global targetY
+
+	yOffset = 0
+	targetX = 0
+	targetY = 0
+
+	# create a new image object with the given path
+	img = Image.open(path).convert('RGBA')
+
+	if type(text) == Text:
+		# create a new ImageFont type and load the specified ttf font
+		img = __write__(img, text, position)
+		
+	elif type(text) == list:
+		for item in text:
+			img = __write__(img, item, position)
+			
+			targetFont = ImageFont.truetype("Fonts/" + fontList[item.style.value], item.size)
+			contentWidth, contentHeight = targetFont.getsize(item.content)
+			yOffset += contentHeight
+
 
 	img.save(targetPath)
 
 round_corners_of_all_images(directory=None)
 tintImage("./modified", (230, 190, 138, 225))
-addTitle("./modified/lighthouse.png", "./modified/lighthouse.png", "TITLE", style=Font.BOLD, color=(221, 221, 221, 255), position=Position.TOP_LEFT)
+
+title = Text("TITLE", Font.BOLD, Color.LIGHTRED, 120)
+subtitle = Text("SUBTITLE", Font.MEDIUM, Color.WHITE, 80)
+hello = Text("FOOTER", Font.MEDIUM, Color.WHITE, 50)
+contact = Text("Contact Us", Font.LIGHT, Color.WHITE, 50)
+
+addText("./modified/lighthouse.png", "./modified/lighthouse.png", [title, subtitle], Position.CENTER)
+addText("./modified/lighthouse.png", "./modified/lighthouse.png", [contact, hello], Position.BOTTOM_CENTER)

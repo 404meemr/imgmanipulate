@@ -9,29 +9,26 @@ import enum
 def hexToRGB(value):
 	value = value.strip("0x");
 	lv = len(value)
+	
 	return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
-
+# this text object prevents the functions from becoming too repetitive
+# TODO: implement text decoration
 class Text(object):
-	def __init__(self, text, style, color):
-		this.text = text
-		this.style = style
-		this.color = color
+	def __init__(self, content, style, color, size):
+		self.content = content
+		self.style = style
+		self.color = color
+		self.size = size
 
-# holds a list of text objects
-# all text objects get placed at the same position
-class Group(object):
-	def __init__(self, items):
-		this.items = items
-
-# the only reason these exist is to make it easier on the user
-# by sacrificing performance
 class Position(enum.Enum):
 	TOP_LEFT = 0
 	TOP_RIGHT = 1
 	BOTTOM_LEFT = 2
 	BOTTOM_RIGHT = 3
 	CENTER = 4
+	TOP_CENTER = 5
+	BOTTOM_CENTER = 6
 
 # TODO: support word wrapping
 class ALIGN(enum.Enum):
@@ -59,7 +56,7 @@ class Font(enum.Enum):
 class Color(enum.Enum):
 	TRANSPARENT = -1
 
-	# TODO: detect the color in the image and use that
+	# TODO: detect colors in the image and use those
 	PRIMARY = -2
 	SECONDARY = -3
 	TERTIARY = -4
