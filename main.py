@@ -23,14 +23,19 @@ Positioning
 		- BOTTOM_LEFT
 		- BOTTOM_CENTER
 		- BOTTOM_RIGHT
-	As of right now, you are not allowed to choose coordinates.
 
 	Usage: Position.<option>
 	Example: Position.TOP_RIGHT
 
+	It should be noted that when adding multiple pieces of text aligned to CENTER,
+	only the first item will be centered in the image on the y axis, not the entire
+	group of texts combined.
+
+	You are also allowed to choose your own coordinates instead of these preconfigured ones
+
 Text API
 --------
-This program has an incredibly powerful and customizable text generation API.
+This is an incredibly powerful and customizable text API
 
 	Font Styles:
 		- REGULAR
@@ -71,10 +76,6 @@ This program has an incredibly powerful and customizable text generation API.
 		- NONE
 		- UNDERLINE
 		- BOX
-
-	It should be noted that when adding multiple pieces of text aligned to CENTER,
-	only the first item will be centered in the image on the y axis, not the entire
-	group of texts combined
 
 	Adding text one at a time:
 	--------------------------
@@ -509,6 +510,7 @@ def addImage(path, maskPath, size, position=Position.CENTER):
 	targetY = 0
 
 	splitPath = str.split(path, "/")
+	print(splitPath[len(splitPath) - 1])
 
 	img = Image.open(path).convert("RGBA")
 	mask = Image.open(maskPath).convert("RGBA")
@@ -516,11 +518,12 @@ def addImage(path, maskPath, size, position=Position.CENTER):
 	imageWidth, imageHeight = img.size
 	maskWidth, maskHeight = mask.size
 
+	
 	sizeTuple = ()
 
 	if type(size) == tuple:
 		sizeTuple = size
-	elif type(size) == float:
+	elif type(size) == float or type(size) == int:
 		sizeTuple = (int(maskWidth * size), int(maskHeight * size))
 	elif type(size) == ImageSize:
 		sizeTuple = (int(maskWidth * imageReductionFactor[size.value]), int(maskHeight * imageReductionFactor[size.value]))
@@ -528,68 +531,69 @@ def addImage(path, maskPath, size, position=Position.CENTER):
 	mask = mask.resize(sizeTuple, Image.ANTIALIAS)
 
 	maskWidth, maskHeight = mask.size # update the values with the new size
-
+	
 	# support for custom positioning
 	if type(position) == tuple:
 		img.paste(mask, position)
-	elif position == Position:
+	elif type(position) == Position:
 		if position == Position.TOP_LEFT:
 			targetX = 30
 			targetY = 30
 
 			offset = (int(targetX), int(targetY))
 
-			img.paste(mask, offset)
+			img.paste(mask, offset, mask=mask)
 		elif position == Position.TOP_CENTER:
 			targetX = (imageWidth / 2) - (maskWidth / 2)
 			targetY = 30
 
 			offset = (int(targetX), int(targetY))
 
-			img.paste(mask, offset)
+			img.paste(mask, offset, mask=mask)
 		elif position == Position.TOP_RIGHT:
 			targetX = imageWidth - maskWidth - 30
 			targetY = 30
 
 			offset = (int(targetX), int(targetY))
 
-			img.paste(mask, offset)
+			img.paste(mask, offset, mask=mask)
 		elif position == Position.CENTER:
 			targetX = (imageWidth / 2) - (maskWidth / 2)
 			targetY = (imageHeight / 2) - (maskHeight / 2)
 
 			offset = (int(targetX), int(targetY))
 
-			img.paste(mask, offset)
+			img.paste(mask, offset, mask=mask)
 		elif position == Position.BOTTOM_RIGHT:
 			targetX = 30
 			targetY = maskHeight + 30
 
 			offset = (int(targetX), int(targetY))
 
-			img.paste(mask, offset)
+			img.paste(mask, offset, mask=mask)
 		elif position == Position.BOTTOM_CENTER:
 			targetX = (imageWidth / 2) - (maskWidth / 2)
 			targetY = maskHeight + 30
 
 			offset = (int(targetX), int(targetY))
 
-			img.paste(mask, offset)
+			img.paste(mask, offset, mask=mask)
 		elif position == Position.BOTTOM_RIGHT:
 			targetX = imageWidth - maskWidth - 30
 			targetY = maskHeight + 30
 
 			offset = (int(targetX), int(targetY))
 
-			img.paste(mask, offset)
+			img.paste(mask, offset, mask=mask)
 
 	filename = str.split(splitPath[len(splitPath) - 1], ".")
 	newPath = "./modified/" + filename[0] + ".png"
+	print(newPath)
 	img.save(newPath)
 
 """
 This is the code used to generate the final images.
-It's really simple.
+The API makes it really simple
 """
 
 round_corners_of_all_images(directory=None)
@@ -598,14 +602,15 @@ tintImage("./modified", (230, 190, 138, 225))
 # we dont want the wwf logo to be tinted
 round_corners_of_all_images(directory="./assets")
 
-# create new text ob
+# first you create text objects
 title = Text("World Wildlife Fund", Font.BOLD, Color.LIGHTRED, 100, Decoration.BOX)
 subtitle = Text("Only One Earth", Font.MEDIUM, Color.WHITE, 80, Decoration.NONE)
 header = Text("https://wwf.org", Font.LIGHT, Color.WHITE, 50, Decoration.NONE)
 footer = Text("Save the Planet", Font.LIGHT, Color.WHITE, 45, Decoration.NONE)
 
+# then you add them to different positions on the image
 addText("./modified/mountain.png", [title, subtitle], Position.CENTER)
 addText("./modified/mountain.png", header, Position.TOP_LEFT)
 addText("./modified/mountain.png", footer, Position.BOTTOM_CENTER)
 
-addImage("./modified/mountain.png", "./modified/wwf.png", 0.2, Position.TOP_RIGHT)
+addImage("./modified/mountain.png", "./modified/wwf.png", 1.0, Position.TOP_RIGHT)
