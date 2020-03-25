@@ -15,11 +15,12 @@ def hexToRGB(value):
 # this text object prevents the functions from becoming too repetitive
 # TODO: implement text decoration
 class Text(object):
-	def __init__(self, content, style, color, size):
+	def __init__(self, content, style, color, size, decoration):
 		self.content = content
 		self.style = style
 		self.color = color
 		self.size = size
+		self.decoration = decoration
 
 class Position(enum.Enum):
 	TOP_LEFT = 0
@@ -30,11 +31,25 @@ class Position(enum.Enum):
 	TOP_CENTER = 5
 	BOTTOM_CENTER = 6
 
-# TODO: support word wrapping
-class ALIGN(enum.Enum):
-	LEFT = 0
-	RIGHT = 1
-	CENTER = 3
+class Decoration(enum.Enum):
+	NONE = 0
+	UNDERLINE = 1
+	BOX = 2
+
+class ImageSize(enum.Enum):
+	NORESIZE = 0
+	EXTRA_SMALL = 1
+	SMALL = 2
+	MEDIUM = 3
+	LARGE = 4
+	EXTRA_LARGE = 5
+
+class TextSize(enum.Enum):
+	NORMAL = 20
+	HEADING2 = 45
+	HEADING1 = 50
+	SUBTITLE = 80
+	TITLE = 100
 
 # we can get the value like so: Font.REGULAR.value
 class Font(enum.Enum):
@@ -54,6 +69,7 @@ class Font(enum.Enum):
 # this one is a bit crusty
 # numbers will be converted to hex and then to rgb
 class Color(enum.Enum):
+	# TODO: add transparency
 	TRANSPARENT = -1
 
 	# TODO: detect colors in the image and use those

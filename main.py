@@ -1,4 +1,3 @@
-
 '''
 Some ideas
 ----------
@@ -11,7 +10,124 @@ Some ideas
 - we can slightly round the corners
 - add some block text in the middle that is the color of the primary color of the image
 - we can put translucent, almost transparent long rectangles on the image
+'''
 
+'''
+Positioning
+-----------
+	Position:
+		- TOP_LEFT
+		- TOP_CENTER
+		- TOP_RIGHT
+		- CENTER
+		- BOTTOM_LEFT
+		- BOTTOM_CENTER
+		- BOTTOM_RIGHT
+	As of right now, you are not allowed to choose coordinates.
+
+	Usage: Position.<option>
+	Example: Position.TOP_RIGHT
+
+Text API
+--------
+This program has an incredibly powerful and customizable text generation API.
+
+	Font Styles:
+		- REGULAR
+		- ITALIC
+		- SEMIBOLD
+		- BOLD
+		- LIGHT
+		- MEDIUM
+		- THIN
+		- SEMIBOLD_ITALIC
+		- BOLD_ITALIC
+		- LIGHT_ITALIC
+		- MEDIUM_ITALIC
+		- THIN_ITALIC
+
+	Colors:
+		- BLACK
+		- WHITE
+		- LIGHTRED
+		- LIGHTYELLOW
+		- ORANGE
+		- LIGHTBLUE
+		- LIGHTCYAN
+		- LIGHTPURPLE
+		- MAGENTA
+	You can also provide your own colors in an RGBA formatted tuple
+	e.x: (255, 255, 255, 255)
+	Background colors are not supported.
+	
+	TextSize:
+		- NORMAL
+		- HEADING2
+		- HEADING1
+		- SUBTITLE
+		- TITLE
+
+	Decoration:
+		- NONE
+		- UNDERLINE
+		- BOX
+
+	It should be noted that when adding multiple pieces of text aligned to CENTER,
+	only the first item will be centered in the image on the y axis, not the entire
+	group of texts combined
+
+	Adding text one at a time:
+	--------------------------
+	First, you will need to create a Text object.
+	Text objects can hold the following:
+		- content
+		- font style
+		- color
+		- text size
+		- decoration
+	e.x: myTitle = Text("foo", Font.BOLD, Color.LIGHTRED, 120, Decoration.BOX)
+
+	Then you can put the text on an image by specifying a filepath and a position
+	e.x: addText("input file path", myTitle, Position.BOTTOM_CENTER)
+
+	Adding more than one text at a time:
+	------------------------------------
+	If you choose to add multiple texts at a time, they will share the same position.
+	For example, a title and subtitle will both be center aligned.
+
+	myTitle = Text("foo", Font.BOLD, Color.LIGHTRED, 120, Decoration.BOX)
+	mySubtitle = Text("bar", Font.MEDIUM, Color.WHITE, 80, Decoration.NONE)
+	myFooter = Text("baz", Font.LIGHT, Color. WHITE, 50, Decoration.UNDERLINE)
+
+	addText("input file path", [myTitle, mySubtitle], Position.CENTER)
+	addText("input file path", myFooter, Position.BOTTOM_CENTER)
+
+	In this case, both myTitle and mySubtitle will be centered in both the x and y axis, while myFooter
+	will be centered at the bottom of the page on the x axis.
+
+	Image API
+	---------
+
+		ImageSize:
+		- NORESIZE
+		- EXTRA_SMALL
+		- SMALL
+		- MEDIUM
+		- LARGE
+		- EXTRA_LARGE
+
+		At this point, images can only be composited on top of each other.
+		The foreground image can be given a position on the screen.
+
+		ImageSize specifies the amount of *scaling* to perform on the image.
+		You can either specify your own scale factor, use ImageSize, or submit your own
+		image dimensions in a tuple.
+
+		addImage("background", "foreground", scale, position)
+
+		e.x: addImage("background", "foreground", Image.SMALL, Position.TOP_CENTER)
+		e.x: addImage("background", "foreground", 0.5, Position.CENTER)
+		e.x: addImage("background", "foreground", (500, 200), Position.TOP_RIGHT)
 '''
 
 import matplotlib.pyplot as plt 
@@ -22,7 +138,6 @@ from PIL import ImageDraw
 from PIL import ImageFont 
 from PIL import ImageChops
 from common import *
-import struct
 
 def round_corners_one_image(original_image, percent_of_side=.3):
   """ Rounds the corner of a PIL.Image
@@ -134,28 +249,53 @@ def round_corners_of_all_images(directory=None):
     new_image_filename = os.path.join(new_directory, filename + '.png')
     new_image.save(new_image_filename)    
 
-def tintImage(directory, tint_color):
+def tintImage(directory, color):
+	"""
+	param: directory
+	type: String
+	desc: Directory that contains the images to be tinted
+
+	param: color
+	type: int or Color
+	desc: color to tint with
+
+	Tints the images with a specified color in a specified directory
+	"""
   
   # Load all the images
-  image_list, file_list = get_images(directory)  
+	image_list, file_list = get_images(directory)
+	colorTuple = ()
 
-  for n in range(len(image_list)):
-    # Parse the filename
-    print(n)
-    filename, filetype = os.path.splitext(file_list[n])
-    
-    curr_image = image_list[n]
-    curr_image = curr_image.convert("RGBA")
-    tintImg = Image.new('RGBA', curr_image.size, tint_color)
-    tintedImage = ImageChops.multiply(curr_image, tintImg)
+	if type(color) == tuple:
+		colorTuple = color
+	elif type(color) == Color:
+		# if the function is called with the Color enum, convert the color enum to an RGBA tuple
+		colorTuple = hexToRGB(str(hex(text.color.value)))
+		
+	for n in range(len(image_list)):
+		# Parse the filename
+		print(n)
+		filename, filetype = os.path.splitext(file_list[n])
+		
+		curr_image = image_list[n]
+		curr_image = curr_image.convert("RGBA")
+		tintImg = Image.new('RGBA', curr_image.size, colorTuple)
+		tintedImage = ImageChops.multiply(curr_image, tintImg)
 
   	# Save the altered image, suing PNG to retain transparency
-    new_image_filename = os.path.join("./modified", filename + '.png')
-    tintedImage.save(new_image_filename)
+		new_image_filename = os.path.join("./modified", filename + '.png')
+		tintedImage.save(new_image_filename)
 
 # font enum stores an index into this array
 fontList = ["Poppins-Regular.ttf", "Poppins-Italic.ttf", "Poppins-SemiBold.ttf", "Poppins-Bold.ttf", "Poppins-Light.ttf", "Poppins-Medium.ttf", "Poppins-Thin.ttf", "Poppins-SemiBoldItalic.ttf", "Poppins-BoldItalic.ttf", "Poppins-LightItalic.ttf", "Poppins-MediumItalic.ttf", "Poppins-ThinItalic.ttf"]
 
+# images will be scaled down by a factor of this
+# these are arbitrary I have no idea what I'm doing
+
+# these are directly coincide with the ImageSize enum values
+imageReductionFactor = [1, 0.05, 0.1, 0.3, 0.7, 2]
+
+# if adding multiple texts, this is to make sure they dont overlap
 yOffset = 0
 
 targetX = 0
@@ -165,7 +305,9 @@ targetY = 0
 def __write__(img, text, position):
 	"""
 	This is an internal function.
-	Its parameters are the same as addText
+	Its parameters are the same as addText.
+
+	Write text to an image
 	"""
 
 	global fontList
@@ -177,90 +319,132 @@ def __write__(img, text, position):
 
 	targetFont = ImageFont.truetype("Fonts/" + fontList[text.style.value], text.size)
 
+	# a tuple of RGBA values that will be used on the text
 	colorTuple = ()
 
 	if type(text.color) == tuple:
+		# if the function is already called with a tuple, leave it
 		colorTuple = text.color
 	else:
-		# create an rgb tuple out of the derived hex value from the color
+		# if the function is called with the Color enum, convert the color enum to an RGBA tuple
 		colorTuple = hexToRGB(str(hex(text.color.value)))
 	
 	# grab the dimensions of the image and the content
 	imageWidth, imageHeight = img.size # size is an attribute, not a method for some reason. this lib is pretty inconsistent
 	contentWidth, contentHeight = targetFont.getsize(text.content)
 
-	if position == Position.TOP_LEFT:
-		targetX = 30
-		targetY = 30 + yOffset
+	# 30 is an arbitrarily chosen offset to place everything at
+	# it would look really odd if text was placed directly at (0, 0)
+	# so we give it some padding to make it look nice
 
-		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+	# support for custom positioning
+	if type(position) == tuple:
+		draw.text(position, text.content, colorTuple, font=targetFont)
+	elif type(position) == Position:
+		if position == Position.TOP_LEFT:
+			targetX = 30
+			targetY = 30 + yOffset
 
-	elif position == Position.TOP_RIGHT:
-		targetX = imageWidth - (contentWidth + 30)
-		targetY = 30 + yOffset
+			draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
-		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+		elif position == Position.TOP_RIGHT:
+			targetX = imageWidth - (contentWidth + 30)
+			targetY = 30 + yOffset
 
-	elif position == Position.BOTTOM_LEFT:
-		targetX = 30
-		targetY = imageHeight - contentHeight - 30 - yOffset
+			draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
-		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+		elif position == Position.BOTTOM_LEFT:
+			targetX = 30
+			targetY = imageHeight - contentHeight - 30 - yOffset
 
-	elif position == Position.BOTTOM_RIGHT:
-		targetX = imageWidth - (contentWidth + 30)
-		targetY = imageHeight - contentHeight - 30 - yOffset
+			draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
-		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+		elif position == Position.BOTTOM_RIGHT:
+			targetX = imageWidth - (contentWidth + 30)
+			targetY = imageHeight - contentHeight - 30 - yOffset
 
-	elif position == Position.CENTER:
-		# calculate the center coordinates of the image
-		centerX = imageWidth / 2
-		centerY = imageHeight / 2
+			draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
 
-		# we place the text at centerX - (titleWidth / 2) and centerY - (titleHeight / 2)
-		targetX = centerX - (contentWidth / 2)
-		targetY = centerY - (contentHeight / 2) + yOffset
+		elif position == Position.CENTER:
+			# calculate the center coordinates of the image
+			centerX = imageWidth / 2
+			centerY = imageHeight / 2
 
-		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
-	elif position == Position.TOP_CENTER:
-		centerX = imageWidth / 2
+			# we place the text at centerX - (titleWidth / 2) and centerY - (titleHeight / 2)
+			targetX = centerX - (contentWidth / 2)
+			targetY = centerY - (contentHeight / 2) + yOffset
 
-		targetX = centerX - (contentWidth / 2)
-		targetY = 30 + yOffset
+			draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+		elif position == Position.TOP_CENTER:
+			centerX = imageWidth / 2
 
-		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
-	elif position == Position.BOTTOM_CENTER:
-		centerX = imageWidth / 2
-		
-		targetX = centerX - (contentWidth / 2)
-		targetY = imageHeight - contentHeight - 30 - yOffset
+			targetX = centerX - (contentWidth / 2)
+			targetY = 30 + yOffset
 
-		draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+			draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+		elif position == Position.BOTTOM_CENTER:
+			centerX = imageWidth / 2
+			
+			targetX = centerX - (contentWidth / 2)
+			targetY = imageHeight - contentHeight - 30 - yOffset
 
+			draw.text((targetX, targetY), text.content, colorTuple, font=targetFont)
+
+	# check if decoration for the content is enabled
+	# decoration means underline
+	# the underline color will be the same as the text
+	# its thickness will be 1/10 the height of the text
+
+	if text.decoration == Decoration.UNDERLINE:
+		targetY += 5 # underline starts 20 pixels below the text
+
+		if "y" in text.content or "g" in text.content:
+			targetY -= contentHeight * 0.25
+
+		draw.rectangle((targetX, targetY + contentHeight, targetX + contentWidth, targetY + contentHeight + (contentHeight * 0.1)), fill=colorTuple)
+
+		targetY += contentHeight + (contentHeight * 0.1) # increment targetY by the same amount we calculated the thickness of the underline
+	elif text.decoration == Decoration.BOX:
+		# the box will just get an underline but on all 4 sides
+
+		lineThickness = contentHeight * 0.1
+
+		# 20 pixel padding and height is 1/10 contentHeight
+		# draw the top line
+		targetY -= 5 - lineThickness
+		draw.rectangle((targetX, targetY, targetX + contentWidth, targetY + lineThickness), fill=colorTuple)
+
+		targetY += 10 + contentHeight # undo what we did before
+
+		# y and g go below the text base line, so move the bottom line up to look consistent
+		if "y" in text.content or "g" in text.content:
+			targetY -= contentHeight * 0.25
+
+		# draw the bottom line
+		draw.rectangle((targetX, targetY, targetX + contentWidth, targetY + lineThickness), fill=colorTuple)
+
+		yOffset += lineThickness * 2
+
+	# return the edited image object so that we can update yOffset in addText
 	return img
 
 # TODO: implement word wrapping
 # this text refers to an instance of the Text class
-def addText(path, targetPath, text, position=Position.CENTER):
+def addText(path, text, position=Position.CENTER):
 	"""
 	param: path
 	type: String
 	desc: path to the image
-
-	param: targetPath
-	type: String
-	desc: path to output image
 
 	param: text
 	type: Text or list
 	desc: a Text object or list of Text objects
 
 	param: position
-	type: Position
+	type: Position or Tuple(int, int)
 	desc: The position of the title on the image
 
-	Adds a title with the given text to the specified images
+	Adds text or gorups of text to a given image
 	"""
 
 	global fontList
@@ -272,13 +456,18 @@ def addText(path, targetPath, text, position=Position.CENTER):
 	targetX = 0
 	targetY = 0
 
-	# create a new image object with the given path
-	img = Image.open(path).convert('RGBA')
+	# split the path with a delimeter
+	# the filename is the last item in this list
+	splitPath = str.split(path, "/")
+	
+	img = Image.open(path).convert("RGBA")
 
 	if type(text) == Text:
-		# create a new ImageFont type and load the specified ttf font
+		# we only have a single item to write, so call it once
 		img = __write__(img, text, position)
-		
+
+	# we have a list of items to write, so loop over them and manipulate yOffset
+	# so that that content of each item doesn't overlap
 	elif type(text) == list:
 		for item in text:
 			img = __write__(img, item, position)
@@ -287,16 +476,136 @@ def addText(path, targetPath, text, position=Position.CENTER):
 			contentWidth, contentHeight = targetFont.getsize(item.content)
 			yOffset += contentHeight
 
+	# we remove the file extension and substitute our own
+	filename = str.split(splitPath[len(splitPath) - 1], ".")
+	newPath = "./modified/" + filename[0] + ".png"
+	img.save(newPath)
 
-	img.save(targetPath)
+def addImage(path, maskPath, size, position=Position.CENTER):
+	"""
+	param: path
+	type: String
+	desc: path of the background image
+	
+	param: maskPath
+	type: String
+	desc: path of the foreground image
+	
+	param: size
+	type: ImageSize, float or Tuple(int, int)
+	desc: factor to reduce image by or the new dimensions of the image
+
+	param: position
+	type: Position or Tuple(int, int)
+	desc: position of the foreground image on the backgorund image
+
+	Composits an image onto another
+	"""
+
+	global targetX
+	global targetY
+
+	targetX = 0
+	targetY = 0
+
+	splitPath = str.split(path, "/")
+
+	img = Image.open(path).convert("RGBA")
+	mask = Image.open(maskPath).convert("RGBA")
+
+	imageWidth, imageHeight = img.size
+	maskWidth, maskHeight = mask.size
+
+	sizeTuple = ()
+
+	if type(size) == tuple:
+		sizeTuple = size
+	elif type(size) == float:
+		sizeTuple = (int(maskWidth * size), int(maskHeight * size))
+	elif type(size) == ImageSize:
+		sizeTuple = (int(maskWidth * imageReductionFactor[size.value]), int(maskHeight * imageReductionFactor[size.value]))
+
+	mask = mask.resize(sizeTuple, Image.ANTIALIAS)
+
+	maskWidth, maskHeight = mask.size # update the values with the new size
+
+	# support for custom positioning
+	if type(position) == tuple:
+		img.paste(mask, position)
+	elif position == Position:
+		if position == Position.TOP_LEFT:
+			targetX = 30
+			targetY = 30
+
+			offset = (int(targetX), int(targetY))
+
+			img.paste(mask, offset)
+		elif position == Position.TOP_CENTER:
+			targetX = (imageWidth / 2) - (maskWidth / 2)
+			targetY = 30
+
+			offset = (int(targetX), int(targetY))
+
+			img.paste(mask, offset)
+		elif position == Position.TOP_RIGHT:
+			targetX = imageWidth - maskWidth - 30
+			targetY = 30
+
+			offset = (int(targetX), int(targetY))
+
+			img.paste(mask, offset)
+		elif position == Position.CENTER:
+			targetX = (imageWidth / 2) - (maskWidth / 2)
+			targetY = (imageHeight / 2) - (maskHeight / 2)
+
+			offset = (int(targetX), int(targetY))
+
+			img.paste(mask, offset)
+		elif position == Position.BOTTOM_RIGHT:
+			targetX = 30
+			targetY = maskHeight + 30
+
+			offset = (int(targetX), int(targetY))
+
+			img.paste(mask, offset)
+		elif position == Position.BOTTOM_CENTER:
+			targetX = (imageWidth / 2) - (maskWidth / 2)
+			targetY = maskHeight + 30
+
+			offset = (int(targetX), int(targetY))
+
+			img.paste(mask, offset)
+		elif position == Position.BOTTOM_RIGHT:
+			targetX = imageWidth - maskWidth - 30
+			targetY = maskHeight + 30
+
+			offset = (int(targetX), int(targetY))
+
+			img.paste(mask, offset)
+
+	filename = str.split(splitPath[len(splitPath) - 1], ".")
+	newPath = "./modified/" + filename[0] + ".png"
+	img.save(newPath)
+
+"""
+This is the code used to generate the final images.
+It's really simple.
+"""
 
 round_corners_of_all_images(directory=None)
 tintImage("./modified", (230, 190, 138, 225))
 
-title = Text("TITLE", Font.BOLD, Color.LIGHTRED, 120)
-subtitle = Text("SUBTITLE", Font.MEDIUM, Color.WHITE, 80)
-hello = Text("FOOTER", Font.MEDIUM, Color.WHITE, 50)
-contact = Text("Contact Us", Font.LIGHT, Color.WHITE, 50)
+# we dont want the wwf logo to be tinted
+round_corners_of_all_images(directory="./assets")
 
-addText("./modified/lighthouse.png", "./modified/lighthouse.png", [title, subtitle], Position.CENTER)
-addText("./modified/lighthouse.png", "./modified/lighthouse.png", [contact, hello], Position.BOTTOM_CENTER)
+# create new text ob
+title = Text("World Wildlife Fund", Font.BOLD, Color.LIGHTRED, 100, Decoration.BOX)
+subtitle = Text("Only One Earth", Font.MEDIUM, Color.WHITE, 80, Decoration.NONE)
+header = Text("https://wwf.org", Font.LIGHT, Color.WHITE, 50, Decoration.NONE)
+footer = Text("Save the Planet", Font.LIGHT, Color.WHITE, 45, Decoration.NONE)
+
+addText("./modified/mountain.png", [title, subtitle], Position.CENTER)
+addText("./modified/mountain.png", header, Position.TOP_LEFT)
+addText("./modified/mountain.png", footer, Position.BOTTOM_CENTER)
+
+addImage("./modified/mountain.png", "./modified/wwf.png", 0.2, Position.TOP_RIGHT)
