@@ -1,18 +1,4 @@
 '''
-Some ideas
-----------
-- we can do an environmental conservation organization
-- finding an existing name is easier than making one up imo
-(don't remove these links)
-- heres a cool image: https://www.pexels.com/photo/light-house-on-hill-3363331/
-- here's another cool image: https://www.pexels.com/photo/calm-body-of-water-1363876/
-- here's an even better image: https://www.pexels.com/photo/landscape-photography-of-mountains-covered-in-snow-691668/ (I want to use this)
-- we can slightly round the corners
-- add some block text in the middle that is the color of the primary color of the image
-- we can put translucent, almost transparent long rectangles on the image
-'''
-
-'''
 Positioning
 -----------
 	Position:
@@ -25,7 +11,9 @@ Positioning
 		- BOTTOM_RIGHT
 
 	Usage: Position.<option>
+	Usage: (x, y)
 	Example: Position.TOP_RIGHT
+	Example: (0, 0)
 
 	It should be noted that when adding multiple pieces of text aligned to CENTER,
 	only the first item will be centered in the image on the y axis, not the entire
@@ -285,7 +273,7 @@ def tintImage(directory, color):
 
   	# Save the altered image, suing PNG to retain transparency
 		new_image_filename = os.path.join("./modified", filename + '.png')
-		tintedImage.save(new_image_filename)
+		tintedImage.save(new_image_filename, format="PNG")
 
 # font enum stores an index into this array
 fontList = ["Poppins-Regular.ttf", "Poppins-Italic.ttf", "Poppins-SemiBold.ttf", "Poppins-Bold.ttf", "Poppins-Light.ttf", "Poppins-Medium.ttf", "Poppins-Thin.ttf", "Poppins-SemiBoldItalic.ttf", "Poppins-BoldItalic.ttf", "Poppins-LightItalic.ttf", "Poppins-MediumItalic.ttf", "Poppins-ThinItalic.ttf"]
@@ -480,7 +468,7 @@ def addText(path, text, position=Position.CENTER):
 	# we remove the file extension and substitute our own
 	filename = str.split(splitPath[len(splitPath) - 1], ".")
 	newPath = "./modified/" + filename[0] + ".png"
-	img.save(newPath)
+	img.save(newPath, format="PNG")
 
 def addImage(path, maskPath, size, position=Position.CENTER):
 	"""
@@ -509,23 +497,34 @@ def addImage(path, maskPath, size, position=Position.CENTER):
 	targetX = 0
 	targetY = 0
 
+	# grab all the names of thte directories and the filename
 	splitPath = str.split(path, "/")
-	print(splitPath[len(splitPath) - 1])
 
+	# convert both paths to a PIL image object
 	img = Image.open(path).convert("RGBA")
 	mask = Image.open(maskPath).convert("RGBA")
 
+	# grab their initial dimensions
 	imageWidth, imageHeight = img.size
 	maskWidth, maskHeight = mask.size
 
-	
+	# if rescaling or resizing has to be applied to the image
+	# then store the new dimensions in sizeTuple
+	# sizeTuple acts as a kind of a proxy to the three supported types
 	sizeTuple = ()
 
 	if type(size) == tuple:
+		# if the user already inputted a tuple (new dimensions)
+		# store their input into sizeTuple
 		sizeTuple = size
 	elif type(size) == float or type(size) == int:
 		sizeTuple = (int(maskWidth * size), int(maskHeight * size))
 	elif type(size) == ImageSize:
+
+		# the ImageSize enum contains an index into the imageReductionFactor list
+		# grab the factor to reduce the image by, multiply the width and the height by the factor
+		# cast it to an integer, because PIL doesn't play nice with floats
+		# then store the new values in sizeTuple
 		sizeTuple = (int(maskWidth * imageReductionFactor[size.value]), int(maskHeight * imageReductionFactor[size.value]))
 
 	mask = mask.resize(sizeTuple, Image.ANTIALIAS)
@@ -534,8 +533,14 @@ def addImage(path, maskPath, size, position=Position.CENTER):
 	
 	# support for custom positioning
 	if type(position) == tuple:
+		# if the user already inputted a tuple (coordinates)
+		# then paste the image at the coordinates they provided
 		img.paste(mask, position)
 	elif type(position) == Position:
+		# if they rely on our abstractions
+		# we have to calculate the position
+		# and then paste the image at the coordinates we calculated
+
 		if position == Position.TOP_LEFT:
 			targetX = 30
 			targetY = 30
@@ -564,39 +569,71 @@ def addImage(path, maskPath, size, position=Position.CENTER):
 			offset = (int(targetX), int(targetY))
 
 			img.paste(mask, offset, mask=mask)
-		elif position == Position.BOTTOM_RIGHT:
+		elif position == Position.BOTTOM_LEFT:
 			targetX = 30
-			targetY = maskHeight + 30
+			targetY = imageHeight - maskHeight + 30
 
 			offset = (int(targetX), int(targetY))
 
 			img.paste(mask, offset, mask=mask)
 		elif position == Position.BOTTOM_CENTER:
 			targetX = (imageWidth / 2) - (maskWidth / 2)
-			targetY = maskHeight + 30
+			targetY = imageHeight - maskHeight + 30
 
 			offset = (int(targetX), int(targetY))
 
 			img.paste(mask, offset, mask=mask)
 		elif position == Position.BOTTOM_RIGHT:
 			targetX = imageWidth - maskWidth - 30
-			targetY = maskHeight + 30
+			targetY = imageHeight - maskHeight + 30
 
 			offset = (int(targetX), int(targetY))
 
 			img.paste(mask, offset, mask=mask)
 
 	filename = str.split(splitPath[len(splitPath) - 1], ".")
+	newPath = "./modified/" + filename[0] + ".png" # just incase the image isn't already a png, save it as one
+	img.save(newPath, format="PNG")
+
+def makeTranslucent(path, alpha):
+	"""
+	param: path
+	type: String
+	desc: 
+
+	param: alpha
+	type: int
+	desc: new alpha value for the image
+	"""
+
+	splitPath = str.split(path, "/")
+
+	img = Image.open(path).convert("RGBA")
+	data = img.getdata() # returns a list of tuples for every pixel
+
+	newData = [] # empty list to store edited data
+
+	for pixel in data:
+		currentAlpha = pixel[3]
+
+		if currentAlpha > 0:
+			newTuple = (pixel[0], pixel[1], pixel[2], alpha)
+			newData.append(newTuple)
+		else:
+			newData.append(pixel)
+
+	img.putdata(newData)
+
+	filename = str.split(splitPath[len(splitPath) - 1], ".")
 	newPath = "./modified/" + filename[0] + ".png"
-	print(newPath)
-	img.save(newPath)
+	img.save(newPath, format="PNG")
 
 """
 This is the code used to generate the final images.
-The API makes it really simple
 """
 
 round_corners_of_all_images(directory=None)
+
 tintImage("./modified", (230, 190, 138, 225))
 
 # we dont want the wwf logo to be tinted
@@ -609,8 +646,9 @@ header = Text("https://wwf.org", Font.LIGHT, Color.WHITE, 50, Decoration.NONE)
 footer = Text("Save the Planet", Font.LIGHT, Color.WHITE, 45, Decoration.NONE)
 
 # then you add them to different positions on the image
-addText("./modified/mountain.png", [title, subtitle], Position.CENTER)
-addText("./modified/mountain.png", header, Position.TOP_LEFT)
-addText("./modified/mountain.png", footer, Position.BOTTOM_CENTER)
+addText("./modified/canyon.png", [title, subtitle], Position.CENTER)
+addText("./modified/canyon.png", header, Position.TOP_LEFT)
+addText("./modified/canyon.png", footer, Position.BOTTOM_CENTER)
 
-addImage("./modified/mountain.png", "./modified/wwf.png", 1.0, Position.TOP_RIGHT)
+# composite the WWF logo on top rip of the image while maintaining 30% of its original size
+addImage("./modified/canyon.png", "./modified/wwf.png", 0.3, Position.TOP_RIGHT)
